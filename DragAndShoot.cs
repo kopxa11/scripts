@@ -33,6 +33,7 @@ public class DragAndShoot : MonoBehaviour
 
     float shootPower;
     bool canShoot = true;
+    print("g");
 
 
 
