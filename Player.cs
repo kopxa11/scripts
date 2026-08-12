@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
+using System;
 public class Player : MonoBehaviour
 {
     public Rigidbody2D rigid;
@@ -11,10 +12,15 @@ public class Player : MonoBehaviour
     public float jumpPower;
     public float dashPower;
 
-    public bool canJump= true;
+    public bool onFly = false;
+    public bool onSpider = false;
+    public bool normal = false;
+
+    public bool canJump= false;
     void Awake()
     {
         col = GetComponent<Collider2D>();   
+        rigid = GetComponent<Rigidbody2D>();
     }
 
     // Update is called once per frame
@@ -27,6 +33,10 @@ public class Player : MonoBehaviour
         Vector2 nextVec = inputVec.normalized * moveSpeed * Time.fixedDeltaTime;
         //rigid.MovePosition(rigid.position + nextVec);
         rigid.linearVelocity = new Vector2(nextVec.x * moveSpeed, rigid.linearVelocityY);
+        if(onSpider)
+        {
+
+        }
     }
     /*void Move()
     {
@@ -48,7 +58,7 @@ public class Player : MonoBehaviour
         }
     }
 
-    void OnDash()
+    void OnSprint()
     {
         StartCoroutine(DashCoroutine());
     }
@@ -60,8 +70,7 @@ public class Player : MonoBehaviour
         Vector2 dashVec = new Vector2(inputVec.x * dashPower, 0);
         rigid.MovePosition(rigid.position + dashVec);
 
-
-
+        Debug.Log("Dash!");
         yield return new WaitForSeconds(0.2f);
 
         //rigid.gravityScale = originalGravity;
@@ -72,6 +81,19 @@ public class Player : MonoBehaviour
         {
             canJump = true;
         }
+
+        if(collision.gameObject.CompareTag("Wall") && onSpider)
+        {
+            rigid.gravityScale = 0;   
+        }
     }
-    
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        if (collision.gameObject.CompareTag("Wall") && onSpider)
+        {
+            rigid.gravityScale = 1;
+        }
+    }
+
 }
