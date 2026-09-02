@@ -1,0 +1,136 @@
+using UnityEngine;
+using UnityEngine.Events;
+using System;
+
+public class HeartSystem : MonoBehaviour
+{
+    [SerializeField]
+    private UnityEvent<int, int> onValueChangedHeart;    // 현재 하트 개수가 바뀔 때마다 호출
+    [SerializeField]
+    private UnityEvent<string>  onValueChangedTimer;    // 하트 충전 시간 텍스트 갱신 시 호출
+    [SerializeField]
+    private UnityEvent<string>  onEventSystem;          // 시스템 메시지 출력 시 호출
+
+    [SerializeField]
+    private int   maxHeart = 20;               // 최대 하트 개수
+    [SerializeField]
+    private float refillTime = 20 * 60;        // 하트 회복 시간(초) - 20분
+
+    private int   currentHeart;
+    private float timer;
+
+    public float Timer
+    {
+        set
+        {
+            timer = value;
+            onValueChangedTimer?.Invoke((CurrentHeart < maxHeart) ? $"{TimeSpan.FromSeconds(timer):mm\\:ss}" : "FULL");
+        }
+        get => timer;
+    }
+
+    public int CurrentHeart
+    {
+        set
+        {
+            currentHeart = Mathf.Clamp(value, 0, maxHeart);
+            onValueChangedHeart?.Invoke(currentHeart, maxHeart);
+        }
+        get => currentHeart;
+    }
+
+    private void Awake()
+    {
+        Init();
+    }
+
+    private void Update()
+    {
+        if (CurrentHeart >= maxHeart) return;
+
+        Timer -= Time.deltaTime;
+
+        if (Timer <= 0)
+        {
+            CurrentHeart++;
+            Timer += refillTime;
+        }
+    }
+
+    private void OnApplicationQuit()
+    {
+        Save();
+    }
+
+    private void OnApplicationPause(bool pause)
+    {
+        if (pause)
+        {
+            Save();
+        }
+    }
+
+    public void UseHeart()
+    {
+        if (CurrentHeart <= 0)
+        {
+            onEventSystem?.Invoke("하트가 부족합니다.");
+            return;
+        }
+
+        CurrentHeart--;
+    }
+
+    private void Init()
+    {
+        // 저장된 하트 데이터 불러오기
+        CurrentHeart = PlayerPrefs.GetInt("HeartSystem_CurrentHeart", maxHeart);
+
+        if (CurrentHeart < maxHeart)
+        {
+            string lastTimeString = PlayerPrefs.GetString("HeartSystem_LastTime", string.Empty);
+
+            if (!string.IsNullOrEmpty(lastTimeString))
+            {
+                DateTime lastTime = DateTime.Parse(lastTimeString);
+                TimeSpan timeSpan = DateTime.Now - lastTime;
+
+                int refilledHearts = (int)(timeSpan.TotalSeconds / refillTime);
+                float remainingTimer = PlayerPrefs.GetFloat("HeartSystem_Timer", refillTime) - (float)(timeSpan.TotalSeconds % refillTime);
+
+                while (remainingTimer < 0)
+                {
+                    refilledHearts++;
+                    remainingTimer += refillTime;
+                }
+
+                CurrentHeart += refilledHearts;
+
+                if (CurrentHeart >= maxHeart)
+                {
+                    Timer = refillTime;
+                }
+                else
+                {
+                    Timer = remainingTimer;
+                }
+            }
+            else
+            {
+                Timer = refillTime;
+            }
+        }
+        else
+        {
+            Timer = refillTime;
+        }
+    }
+
+    private void Save()
+    {
+        PlayerPrefs.SetInt("HeartSystem_CurrentHeart", CurrentHeart);
+        PlayerPrefs.SetFloat("HeartSystem_Timer", Timer);
+        PlayerPrefs.SetString("HeartSystem_LastTime", DateTime.Now.ToString());
+        PlayerPrefs.Save();
+    }
+}
