@@ -1,0 +1,45 @@
+using UnityEngine;
+using TMPro;
+using System.Collections;
+
+public class UIController : MonoBehaviour
+{
+    [SerializeField]
+    private TextMeshProUGUI textHeart;      // 하트 개수 표시 텍스트
+    [SerializeField]
+    private TextMeshProUGUI textTimer;      // 남은 시간/FULL 표시 텍스트
+    [SerializeField]
+    private TextMeshProUGUI textSystem;     // 시스템 메시지 텍스트
+
+    private Coroutine systemTextCoroutine;
+
+    public void UpdateHeart(int currentHeart, int maxHeart)
+    {
+        textHeart.text = $"{currentHeart} / {maxHeart}";
+    }
+
+    public void UpdateTimer(string text)
+    {
+        textTimer.text = text;
+    }
+
+    public void UpdateSystemText(string text)
+    {
+        if (systemTextCoroutine != null)
+        {
+            StopCoroutine(systemTextCoroutine);
+        }
+
+        systemTextCoroutine = StartCoroutine(OnSystemText(text));
+    }
+
+    private IEnumerator OnSystemText(string text)
+    {
+        textSystem.text = text;
+        textSystem.gameObject.SetActive(true);
+
+        yield return new WaitForSeconds(2.0f);
+
+        textSystem.gameObject.SetActive(false);
+    }
+}
