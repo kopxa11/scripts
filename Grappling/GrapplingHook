@@ -1,0 +1,83 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class GrapplingHook : MonoBehaviour
+{
+    public LineRenderer lineRenderer;
+    public Transform hook;
+    public GameObject hookObject;
+    public DistanceJoint2D distanceJoint;
+
+    public bool isShooting = false;
+    public bool isMaxDistance = false;
+    public bool isAttach = false;
+
+    private Vector3 targetDir;
+
+    void Start()
+    {
+        lineRenderer.useWorldSpace = true;
+    }
+
+    void Update()
+    {
+        // 로프 위치 업데이트
+        if (isShooting || isAttach)
+        {
+            lineRenderer.SetPosition(0, transform.position);
+            lineRenderer.SetPosition(1, hook.position);
+        }
+
+        // E 키 입력 시 발사 또는 해제
+        if (Input.GetKeyDown(KeyCode.E))
+        {
+            if (isAttach)
+            {
+                // 해제
+                isShooting = false;
+                isMaxDistance = false;
+                isAttach = false;
+                distanceJoint.enabled = false;
+                hookObject.SetActive(false);
+                lineRenderer.enabled = false;
+            }
+            else
+            {
+                // 발사
+                Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                mousePos.z = 0;
+                targetDir = mousePos - transform.position;
+
+                hook.position = transform.position;
+                hookObject.SetActive(true);
+                lineRenderer.enabled = true;
+
+                isShooting = true;
+                isMaxDistance = false;
+            }
+        }
+
+        // 고리 이동 로직
+        if (isShooting && !isMaxDistance && !isAttach)
+        {
+            hook.Translate(targetDir.normalized * Time.deltaTime * 20f);
+
+            if (Vector2.Distance(transform.position, hook.position) >= 5f)
+            {
+                isMaxDistance = true;
+            }
+        }
+        else if (isShooting && isMaxDistance && !isAttach)
+        {
+            hook.position = Vector3.MoveTowards(hook.position, transform.position, Time.deltaTime * 20f);
+
+            if (Vector2.Distance(transform.position, hook.position) < 0.1f)
+            {
+                isShooting = false;
+                hookObject.SetActive(false);
+                lineRenderer.enabled = false;
+            }
+        }
+    }
+}
